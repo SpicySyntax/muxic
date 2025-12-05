@@ -1,6 +1,6 @@
 # Usage Guide for Windows
 
-This guide explains how to build and run the **muxic** application on Windows.
+This guide explains how to build and run the **muxic** multi-track audio recording CLI application on Windows.
 
 ## Prerequisites
 
@@ -48,114 +48,182 @@ Or for a smaller binary with debug symbols:
 zig build -Doptimize=ReleaseSafe
 ```
 
-Or for the smallest binary size:
-
-```powershell
-zig build -Doptimize=ReleaseSmall
-```
-
 ## Running the Application
 
-### Run Directly
+### Quick Start
 
-You can build and run the application in one command:
-
-```powershell
-zig build run
-```
-
-### Run with Arguments
-
-To pass arguments to the application:
+After building, you can run muxic using:
 
 ```powershell
-zig build run -- [your arguments here]
+zig build run -- <command> [arguments]
 ```
 
-### Run the Compiled Executable
-
-After building, you can run the executable directly:
+Or run the executable directly:
 
 ```powershell
-.\zig-out\bin\muxic.exe
+.\zig-out\bin\muxic.exe <command> [arguments]
 ```
 
-## Testing
+### Available Commands
 
-To run the unit tests:
+#### Show Help
+
+```powershell
+zig build run -- help
+```
+
+#### Record a Track
+
+Record a new audio track. You'll be prompted to press Enter to start recording, then Enter again to stop.
+
+```powershell
+zig build run -- record <track-name>
+```
+
+**Example:**
+```powershell
+zig build run -- record vocals
+zig build run -- record guitar
+zig build run -- record drums
+```
+
+#### List All Tracks
+
+Display all recorded tracks with their file sizes:
+
+```powershell
+zig build run -- list
+```
+
+**Example output:**
+```
+📼 Recorded Tracks:
+==================
+  1. vocals (128 KB)
+  2. guitar (256 KB)
+  3. drums (192 KB)
+
+Total: 3 track(s)
+```
+
+#### Play a Track
+
+Play back a recorded track:
+
+```powershell
+zig build run -- play <track-name>
+```
+
+**Example:**
+```powershell
+zig build run -- play vocals
+```
+
+#### Mix Tracks
+
+Mix all recorded tracks into a single output file:
+
+```powershell
+zig build run -- mix <output-name>
+```
+
+**Example:**
+```powershell
+zig build run -- mix final_mix
+```
+
+This will combine all tracks in the `tracks/` directory into a new file called `final_mix.wav`.
+
+#### Export a Track
+
+Export a track to a specific WAV file location:
+
+```powershell
+zig build run -- export <track-name> <output-file>
+```
+
+**Example:**
+```powershell
+zig build run -- export vocals my_vocals.wav
+zig build run -- export guitar C:\Music\guitar_track.wav
+```
+
+## Workflow Example
+
+Here's a typical workflow for creating a multi-track recording:
+
+```powershell
+# 1. Record your first track
+zig build run -- record vocals
+
+# 2. Record additional tracks
+zig build run -- record guitar
+zig build run -- record bass
+zig build run -- record drums
+
+# 3. List all tracks to verify
+zig build run -- list
+
+# 4. Play back individual tracks to check quality
+zig build run -- play vocals
+zig build run -- play guitar
+
+# 5. Mix all tracks together
+zig build run -- mix final_song
+
+# 6. Export the final mix
+zig build run -- export final_song my_song.wav
+```
+
+## Track Storage
+
+All recorded tracks are stored in the `tracks/` directory as WAV files:
+- **Format**: WAV (PCM)
+- **Sample Rate**: 44100 Hz
+- **Channels**: 2 (Stereo)
+- **Bit Depth**: 16-bit
+
+You can open these files in any audio software (Audacity, VLC, Windows Media Player, etc.).
+
+## Troubleshooting
+
+### "zig: command not found"
+
+Make sure Zig is properly installed and added to your PATH. Close and reopen your terminal after adding Zig to PATH.
+
+### Build Errors
+
+If you encounter build errors, try:
+
+1. Clean the build cache:
+   ```powershell
+   Remove-Item -Recurse -Force .zig-cache, zig-out
+   zig build
+   ```
+
+2. Ensure you're using a compatible Zig version (0.15.2 or newer)
+
+### Track Not Found
+
+Make sure you're using the exact track name (without the `.wav` extension) when playing, mixing, or exporting tracks. Use `zig build run -- list` to see all available tracks.
+
+## Development
+
+### Run Tests
 
 ```powershell
 zig build test
 ```
 
-## Cleaning Build Artifacts
-
-To clean the build cache and output:
+### Clean Build Artifacts
 
 ```powershell
 Remove-Item -Recurse -Force .zig-cache, zig-out
 ```
 
-## Troubleshooting
+## Next Steps
 
-### "zig is not recognized"
-
-If you get this error, Zig is not in your PATH. Make sure you:
-1. Added Zig to your PATH environment variable
-2. Opened a **new** terminal window after modifying PATH
-3. Verified the path is correct
-
-### Build Errors
-
-If you encounter build errors:
-1. Ensure you're using a compatible Zig version (check `build.zig.zon` for requirements)
-2. Try cleaning the build cache: `Remove-Item -Recurse -Force .zig-cache`
-3. Check that all dependencies are properly configured in `build.zig.zon`
-
-### Permission Issues
-
-If you encounter permission errors when running the executable:
-1. Make sure you have write permissions in the project directory
-2. Try running PowerShell as Administrator
-3. Check your antivirus software isn't blocking the executable
-
-## Additional Build Options
-
-### View All Build Steps
-
-To see all available build steps:
-
-```powershell
-zig build --help
-```
-
-### Specify Target Platform
-
-To cross-compile for a different platform:
-
-```powershell
-zig build -Dtarget=x86_64-windows
-```
-
-## Development Workflow
-
-A typical development workflow on Windows:
-
-1. Make changes to source files in `src/`
-2. Build and run: `zig build run`
-3. Run tests: `zig build test`
-4. Build release version when ready: `zig build -Doptimize=ReleaseFast`
-
-## Project Structure
-
-```
-muxic/
-├── build.zig          # Build configuration
-├── build.zig.zon      # Dependencies and package info
-├── src/               # Source files
-│   └── main.zig       # Main entry point
-├── zig-out/           # Build output (generated)
-│   └── bin/
-│       └── muxic.exe  # Compiled executable
-└── .zig-cache/        # Build cache (generated)
-```
+- Record multiple tracks sequentially
+- Mix them together to create a complete song
+- Export individual tracks or the final mix to share with others
+- Use external audio software for advanced editing and effects
