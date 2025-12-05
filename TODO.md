@@ -1,0 +1,1 @@
+- make `record` command use the selected input device
