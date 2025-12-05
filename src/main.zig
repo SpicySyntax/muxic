@@ -26,5 +26,12 @@ pub fn main() !void {
     std.debug.print("   - Save to WAV file format\n\n", .{});
     
     std.debug.print("Project structure is ready!\n", .{});
-    std.debug.print("Next steps: Add dependencies and implement full functionality.\n", .{});
+    std.debug.print("Next steps: Add dependencies and implement full functionality.\n\n", .{});
+    
+    // Keep window open with a busy loop so user can read the output
+    std.debug.print("Keeping window open (press Ctrl+C to close early)...\n", .{});
+    var i: u64 = 0;
+    while (i < 10_000_000_000) : (i += 1) {
+        // Busy wait - this will take several seconds to complete
+    }
 }

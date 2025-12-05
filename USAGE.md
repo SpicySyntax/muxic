@@ -6,7 +6,7 @@ This guide explains how to build and run the **muxic** application on Windows.
 
 ### Install Zig
 
-1. **Download Zig**: Visit the [official Zig downloads page](https://ziglang.org/download/) and download the latest version for Windows (e.g., `zig-windows-x86_64-0.13.0.zip` or newer).
+1. **Download Zig**: Visit the [official Zig downloads page](https://ziglang.org/download/) and download the latest version for Windows (e.g., `zig-x86_64-windows-0.16.0-dev.1484+d0ba6642b` or newer).
 
 2. **Extract the Archive**: Extract the downloaded ZIP file to a location on your system, such as `C:\zig`.
 
