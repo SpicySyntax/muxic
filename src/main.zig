@@ -376,7 +376,18 @@ fn saveWavFile(path: []const u8, audio_data: []const u8) !void {
 }
 
 fn selectDevice(allocator: std.mem.Allocator, device_name: []const u8) !void {
-    _ = allocator;
-    _ = device_name;
-    @panic("TODO: Implement area calculation");
+    var config = try Config.load(allocator);
+    defer config.deinit(allocator);
+
+    // Free old device name if present
+    if (config.default_device) |old_dev| {
+        allocator.free(old_dev);
+    }
+
+    // Duplicate string so config owns it (independent of caller's memory)
+    config.default_device = try allocator.dupe(u8, device_name);
+
+    try config.save();
+
+    std.debug.print("Selected default recording device: '{s}'\n", .{device_name});
 }

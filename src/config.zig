@@ -41,9 +41,11 @@ pub const Config = struct {
 
         const file = try std.fs.cwd().createFile(file_path, .{});
         defer file.close();
-
-        var ws = std.json.writeStream(file.writer(), .{ .whitespace = .indent_2 });
-        try ws.write(self);
+        // Setup the file writer
+        var buffer: [4096]u8 = undefined;
+        var file_writer = file.writer(&buffer);
+        const writer = &file_writer.interface;
+        try std.json.Stringify.value(self, .{ .whitespace = .indent_2 }, writer);
     }
 
     pub fn deinit(self: *Config, allocator: std.mem.Allocator) void {
