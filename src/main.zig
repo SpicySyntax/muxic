@@ -1,4 +1,5 @@
 const std = @import("std");
+const Config = @import("config.zig").Config;
 
 const TRACKS_DIR = "tracks";
 const SAMPLE_RATE = 44100;
@@ -50,8 +51,23 @@ pub fn main() !void {
             return error.MissingArguments;
         }
         try exportTrack(allocator, args[2], args[3]);
-    } else if (std.mem.eql(u8, command, "devices")) {
-        try listDevices(allocator);
+    } else if (std.mem.eql(u8, command, "devices") or std.mem.eql(u8, command, "device")) {
+        if (args.len >= 3 and std.mem.eql(u8, args[2], "list")) {
+            try listDevices(allocator);
+        } else if (args.len >= 3 and std.mem.eql(u8, args[2], "select")) {
+            if (args.len < 4) {
+                std.debug.print("Error: device name required\n", .{});
+                std.debug.print("Usage: muxic device select <device-name>\n", .{});
+                return error.MissingDeviceName;
+            }
+            // Join remaining args as device name (in case it has spaces)
+            const device_name = try std.mem.join(allocator, " ", args[3..]);
+            defer allocator.free(device_name);
+            try selectDevice(allocator, device_name);
+        } else {
+            // Default to list if just "muxic device" or "muxic devices" is called
+            try listDevices(allocator);
+        }
     } else if (std.mem.eql(u8, command, "help") or std.mem.eql(u8, command, "--help") or std.mem.eql(u8, command, "-h")) {
         printUsage();
     } else {
@@ -71,7 +87,8 @@ fn printUsage() void {
         \\  muxic list                          List all recorded tracks
         \\  muxic mix <output-name>             Mix all tracks into one file
         \\  muxic export <track-name> <file>    Export a track to WAV file
-        \\  muxic devices                       List available audio devices
+        \\  muxic device list                   List available audio devices
+        \\  muxic device select <name>          Select default recording device
         \\  muxic help                          Show this help message
         \\
         \\Examples:
@@ -102,7 +119,16 @@ fn recordTrack(allocator: std.mem.Allocator, track_name: []const u8) !void {
     const track_path = try getTrackPath(allocator, track_name);
     defer allocator.free(track_path);
 
-    std.debug.print("Recording track '{s}'...\n", .{track_name});
+    // Load config
+    var config = try Config.load(allocator);
+    defer config.deinit(allocator);
+
+    var device_name: []const u8 = "Default Input";
+    if (config.default_device) |dev| {
+        device_name = dev;
+    }
+
+    std.debug.print("Recording track '{s}' using device: '{s}'...\n", .{ track_name, device_name });
     std.debug.print("Press Enter to start recording, then Enter again to stop.\n", .{});
 
     // Wait for user to press Enter to start
@@ -162,7 +188,17 @@ fn playTrack(allocator: std.mem.Allocator, track_name: []const u8) !void {
 }
 
 fn listDevices(allocator: std.mem.Allocator) !void {
+    // Load config to show default
+    var config = try Config.load(allocator);
+    defer config.deinit(allocator);
+
     std.debug.print("[DEVICES] Audio Devices:\n", .{});
+    if (config.default_device) |dev| {
+        std.debug.print("Current Default: {s}\n", .{dev});
+    } else {
+        std.debug.print("Current Default: (none selected)\n", .{});
+    }
+    std.debug.print("======================\n", .{});
     std.debug.print("======================\n", .{});
 
     // Use PowerShell to get friendly device names
@@ -337,4 +373,10 @@ fn saveWavFile(path: []const u8, audio_data: []const u8) !void {
     std.mem.writeInt(u32, &buf, data_size, .little);
     _ = try file.write(&buf);
     _ = try file.write(audio_data);
+}
+
+fn selectDevice(allocator: std.mem.Allocator, device_name: []const u8) !void {
+    _ = allocator;
+    _ = device_name;
+    @panic("TODO: Implement area calculation");
 }
