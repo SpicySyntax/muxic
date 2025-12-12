@@ -1,2 +1,1 @@
-- make `record` command use the selected input device
-- maybe we should use go instead? LLMS struggle a lot with zig
+
