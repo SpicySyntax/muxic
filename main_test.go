@@ -89,3 +89,29 @@ func TestSaveWavFile(t *testing.T) {
 		t.Errorf("Invalid WAVE header")
 	}
 }
+
+func TestCalculateAmplitude(t *testing.T) {
+	// Test 16-bit silence
+	silence16 := []byte{0, 0, 0, 0}
+	amp := calculateAmplitude(silence16, 16)
+	if amp != 0 {
+		t.Errorf("Expected 0 amplitude for silence, got %f", amp)
+	}
+
+	// Test 16-bit max amplitude
+	// 32767 = 0x7FFF -> 0xFF 0x7F (Little Endian)
+	max16 := []byte{0xFF, 0x7F}
+	amp = calculateAmplitude(max16, 16)
+	// 32767/32768 ~= 0.999969
+	if amp < 0.99 {
+		t.Errorf("Expected ~1.0 amplitude for max int16, got %f", amp)
+	}
+
+	// Test 32-bit float max amplitude
+	// 1.0 = 0x3F800000 -> 00 00 80 3F
+	max32 := []byte{0x00, 0x00, 0x80, 0x3F}
+	amp = calculateAmplitude(max32, 32)
+	if amp != 1.0 {
+		t.Errorf("Expected 1.0 amplitude for 1.0 float, got %f", amp)
+	}
+}

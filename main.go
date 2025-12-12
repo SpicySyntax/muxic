@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/go-ole/go-ole"
+
 	"github.com/moutend/go-wca/pkg/wca"
 )
 
@@ -239,6 +241,11 @@ func recordTrack(trackName string) error {
 	}
 	fmt.Println("[RECORDING] Recording... (Press Enter to stop)")
 
+	// Visualizer setup
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+	var currentAmplitude float64
+
 	done := make(chan bool)
 	go func() {
 		bufio.NewReader(os.Stdin).ReadString('\n')
@@ -252,6 +259,9 @@ func recordTrack(trackName string) error {
 		select {
 		case <-done:
 			isCapturing = false
+			fmt.Println() // Newline after visualizer
+		case <-ticker.C:
+			drawVisualizer(currentAmplitude)
 		default:
 			var buffer *byte
 			var framesAvailable uint32
@@ -278,7 +288,11 @@ func recordTrack(trackName string) error {
 				// Safety: buffer is valid until ReleaseBuffer
 				src := unsafe.Slice(buffer, bytesToCopy)
 				copy(chunk, src)
+				copy(chunk, src)
 				audioData = append(audioData, chunk...)
+
+				// Calculate amplitude for visualizer
+				currentAmplitude = calculateAmplitude(chunk, wfx.WBitsPerSample)
 			}
 
 			if err := captureClient.ReleaseBuffer(framesAvailable); err != nil {
@@ -718,4 +732,44 @@ func saveWavFile(path string, audioData []byte, wfx *wca.WAVEFORMATEX) error {
 	}
 
 	return nil
+}
+
+func calculateAmplitude(data []byte, bitsPerSample uint16) float64 {
+	var maxVal float64
+
+	if bitsPerSample == 16 {
+		numSamples := len(data) / 2
+		for i := 0; i < numSamples; i++ {
+			sample := int16(binary.LittleEndian.Uint16(data[i*2 : i*2+2]))
+			absVal := math.Abs(float64(sample)) / 32768.0
+			if absVal > maxVal {
+				maxVal = absVal
+			}
+		}
+	} else if bitsPerSample == 32 {
+		numSamples := len(data) / 4
+		for i := 0; i < numSamples; i++ {
+			valbits := binary.LittleEndian.Uint32(data[i*4 : i*4+4])
+			fVal := math.Float32frombits(valbits)
+			absVal := math.Abs(float64(fVal))
+			if absVal > maxVal {
+				maxVal = absVal
+			}
+		}
+	}
+
+	return maxVal
+}
+
+func drawVisualizer(amplitude float64) {
+	const barWidth = 20
+	numBars := int(amplitude * barWidth)
+	if numBars > barWidth {
+		numBars = barWidth
+	}
+
+	bars := strings.Repeat("|", numBars)
+	spaces := strings.Repeat(" ", barWidth-numBars)
+
+	fmt.Printf("\r\033[K[%s%s]", bars, spaces)
 }
